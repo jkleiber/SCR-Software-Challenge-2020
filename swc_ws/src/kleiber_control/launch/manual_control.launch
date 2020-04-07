@@ -1,0 +1,16 @@
+<launch>
+    <!-- Localization -->
+    <node pkg="kleiber_control" type="localization_node" name="localization_node" output="screen" >
+        <param name="lat" value="35.205519008" />
+        <param name="lon" value="-97.4423217773" />
+        <param name="x" value="25"/>
+        <param name="y" value="20"/>
+    </node>
+
+    <!-- Robot Keyboard Driver -->
+    <!-- <node pkg="kleiber_control" type="manual_control_node.py" name="manual_control_node" /> -->
+    <node pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard">
+        <param name="_speed" value="2.0"/>
+        <param name="_turn" value="30"/>
+    </node>
+</launch>

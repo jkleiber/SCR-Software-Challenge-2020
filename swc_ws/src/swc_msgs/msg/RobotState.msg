@@ -1,0 +1,9 @@
+float64 latitude
+float64 longitude
+float64 x
+float64 y
+float64 heading
+float64 velocity
+float64 turn_angle
+float64 linear_acceleration
+float64 angular_acceleration

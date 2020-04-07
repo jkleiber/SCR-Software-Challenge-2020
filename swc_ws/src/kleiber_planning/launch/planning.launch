@@ -1,0 +1,7 @@
+<launch>
+    <!-- Task Planning -->
+    <node pkg="kleiber_planning" type="task_planning_node.py" name="task_planning_node" output="screen" />
+
+    <!-- Path Planning -->
+    <node pkg="kleiber_planning" type="path_planning_node.py" name="path_planning_node" output="screen" />
+</launch>

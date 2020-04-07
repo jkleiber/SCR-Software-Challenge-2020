@@ -1,0 +1,9 @@
+<launch>
+    <!-- Localization -->
+    <node pkg="kleiber_control" type="localization_node" name="localization_node" output="screen" >
+        <param name="lat" value="35.205519008" />
+        <param name="lon" value="-97.4423217773" />
+        <param name="x" value="20"/>
+        <param name="y" value="25"/>
+    </node>
+</launch>

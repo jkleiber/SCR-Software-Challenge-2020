@@ -1,0 +1,15 @@
+<launch>
+    <!-- Set up the bridge to the simulator -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+    <!-- Mapping subsystem -->
+    <include file="$(find kleiber_mapping)/launch/mapping.launch" />
+
+    <!-- Control subsystem -->
+    <!-- <include file="$(find kleiber_control)/launch/control.launch" /> -->
+    <include file="$(find kleiber_control)/launch/manual_control.launch" />
+
+    <!-- Planning subsystem -->
+    <include file="$(find kleiber_planning)/launch/planning.launch" />
+
+</launch>
