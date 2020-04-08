@@ -3,7 +3,7 @@
 import rospy
 import copy
 
-from math import sin, cos
+from math import sin, cos, pi
 
 import tf
 
@@ -12,9 +12,9 @@ from sensor_msgs.msg import LaserScan
 from swc_msgs.msg import RobotState
 
 # Map size and resolution
-MAP_RES = 0.05
-MAP_WIDTH = int(50 / MAP_RES)   # 50 meters wide
-MAP_HEIGHT = int(100 / MAP_RES) # 100 meters long
+MAP_RES = 0.25
+MAP_WIDTH = int(100 / MAP_RES)   # 50 meters wide
+MAP_HEIGHT = int(50/ MAP_RES) # 100 meters long
 
 # Create the map
 map_info = MapMetaData(resolution=MAP_RES, width = MAP_WIDTH, height = MAP_HEIGHT)
@@ -47,8 +47,8 @@ def state_estimate_callback(state):
 
     # Broadcast the new transform between the robot and the map
     broadcaster = tf.TransformBroadcaster()
-    broadcaster.sendTransform((robot_x, robot_y, 0),
-                              tf.transformations.quaternion_from_euler(0, 0, robot_hdg),
+    broadcaster.sendTransform((0, 0, 0),
+                              tf.transformations.quaternion_from_euler(0, 0, 0),
                               rospy.Time.now(),
                               "base_link",
                               "map")

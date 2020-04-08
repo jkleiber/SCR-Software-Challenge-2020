@@ -12,4 +12,10 @@
     <!-- Planning subsystem -->
     <include file="$(find kleiber_planning)/launch/planning.launch" />
 
+    <!-- Global parameters -->
+    <param name="start_lat" value="35.205519008" />
+    <param name="start_lon" value="-97.4423217773" />
+    <param name="start_x" value="20"/>
+    <param name="start_y" value="25"/>
+
 </launch>

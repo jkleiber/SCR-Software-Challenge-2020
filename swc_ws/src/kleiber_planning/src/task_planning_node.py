@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 
 import rospy
-from math import sin, cos, atan2, radians, pi, sqrt
 
+from gps_calc import measure_gps
 from swc_msgs.msg import Gps, RobotState
 from swc_msgs.srv import Waypoints
 
@@ -17,20 +17,16 @@ DIST_EPS = 1.0  # meter
 # Waypoint publisher
 wpt_pub = rospy.Publisher("/task/goal", Gps, queue_size=1)
 
-def measure_gps(lat1, lon1, lat2, lon2):
-    """ Haversine formula for finding distance between two GPS points """
-    R = 6378.137; # Radius of earth in KM
-    dLat = radians(lat2) - radians(lat1)
-    dLon = radians(lon2) - radians(lon1)
-    a = sin(dLat/2) * sin(dLat/2) + cos(radians(lat1)) * cos(radians(lat2)) * sin(dLon/2) * sin(dLon/2);
-    c = 2 * atan2(sqrt(a), sqrt(1-a));
-    d = R * c;
-    return d * 1000; # meters
+
 
 
 def state_estimate_callback(state):
     """ Get the GPS coordinates from the state variables """
     global active_wpt, active_wpt_idx
+
+    # Wait for the active waypoint to be selected first
+    if active_wpt is None:
+        return
 
     # Get current GPS
     lat = state.latitude
@@ -46,6 +42,7 @@ def state_estimate_callback(state):
         # If there is another waypoint in the list, set it:
         if active_wpt_idx < len(wpt_list):
             active_wpt = wpt_list[active_wpt_idx]
+            print("NEW WAYPOINT: ", active_wpt)
 
             # publish active waypoint
             wpt_pub.publish(active_wpt)

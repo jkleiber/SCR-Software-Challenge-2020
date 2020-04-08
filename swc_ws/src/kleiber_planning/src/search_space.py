@@ -15,9 +15,9 @@ class SearchSpace:
         self.grid = []
 
         # Populate the grid
-        for i in range(self.W):
+        for i in range(self.H):
             row = []
-            for j in range(self.H):
+            for j in range(self.W):
                 row.append(Node(i,j))
             self.grid.append(row)
 
@@ -54,7 +54,7 @@ class SearchSpace:
     def load_search_space_from_map(self, map_data):
         for i in range(self.H):
             for j in range(self.W):
-                cost = map_data[(self.H * i) + j]
+                cost = map_data[(self.W * i) + j]
                 if cost >= 100 or cost < 0:
                     self.grid[i][j].set_cost(Node.INFINITY)
                 else:

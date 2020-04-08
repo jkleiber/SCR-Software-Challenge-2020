@@ -8,3 +8,6 @@ build/
 
 # Ignore temp files from assorted programs
 *~
+
+# Ignore the simulator
+simulator/
