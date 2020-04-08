@@ -4,7 +4,7 @@
         <param name="lat" value="35.205519008" />
         <param name="lon" value="-97.4423217773" />
         <param name="x" value="25"/>
-        <param name="y" value="20"/>
+        <param name="y" value="30"/>
     </node>
 
     <!-- Robot Keyboard Driver -->

@@ -1,0 +1,6 @@
+74.2785
+1: Obstacles Bonus
+0.6: Noise Bonus
+0.8: Waypoint 1 reached
+0.8: Waypoint 2 reached
+0.8: Waypoint 3 reached

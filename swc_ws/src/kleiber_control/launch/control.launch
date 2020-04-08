@@ -4,6 +4,9 @@
         <param name="lat" value="35.205519008" />
         <param name="lon" value="-97.4423217773" />
         <param name="x" value="20"/>
-        <param name="y" value="25"/>
+        <param name="y" value="30"/>
     </node>
+
+    <node pkg="kleiber_control" type="basic_control_node.py" name="basic_control_node" output="screen"/>
+
 </launch>

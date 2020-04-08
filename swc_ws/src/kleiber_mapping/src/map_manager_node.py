@@ -13,8 +13,8 @@ from swc_msgs.msg import RobotState
 
 # Map size and resolution
 MAP_RES = 0.25
-MAP_WIDTH = int(100 / MAP_RES)   # 50 meters wide
-MAP_HEIGHT = int(50/ MAP_RES) # 100 meters long
+MAP_WIDTH = int(60 / MAP_RES)   # 50 meters wide
+MAP_HEIGHT = int(125 / MAP_RES) # 100 meters long
 
 # Create the map
 map_info = MapMetaData(resolution=MAP_RES, width = MAP_WIDTH, height = MAP_HEIGHT)
@@ -26,7 +26,7 @@ map_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
 
 # Robot information
 ROBOT_WIDTH = 0.2
-ROBOT_LENGTH = 0.4
+ROBOT_LENGTH = 0.2
 
 # Track the robot's pose
 robot_x = 0
@@ -47,8 +47,13 @@ def state_estimate_callback(state):
 
     # Broadcast the new transform between the robot and the map
     broadcaster = tf.TransformBroadcaster()
-    broadcaster.sendTransform((0, 0, 0),
-                              tf.transformations.quaternion_from_euler(0, 0, 0),
+    # broadcaster.sendTransform((0, 0, 0),
+    #                           tf.transformations.quaternion_from_euler(0, 0, 0),
+    #                           rospy.Time.now(),
+    #                           "base_link",
+    #                           "map")
+    broadcaster.sendTransform((60, 0, 0),
+                              tf.transformations.quaternion_from_euler(0, 0, pi/2),
                               rospy.Time.now(),
                               "base_link",
                               "map")
@@ -69,7 +74,7 @@ def laser_scan_callback(scan_data):
     angle = scan_data.angle_min
     while angle <= scan_data.angle_max:
         # Put this angle inside the robot's frame
-        projected_angle = angle + robot_hdg
+        projected_angle = robot_hdg - angle
 
         # Find the range to an obstacle at this angle
         range_data = scan_data.ranges[scan_idx]
@@ -147,7 +152,7 @@ if __name__ == "__main__":
     state_sub = rospy.Subscriber("/robot/state", RobotState, state_estimate_callback, queue_size=1)
 
     # Publish the timer on an interval
-    map_timer = rospy.Timer(rospy.Duration(0.25), get_configuration_space)
+    map_timer = rospy.Timer(rospy.Duration(0.1), get_configuration_space)
 
     # Run the node and callbacks
     rospy.spin()

@@ -6,8 +6,8 @@
     <include file="$(find kleiber_mapping)/launch/mapping.launch" />
 
     <!-- Control subsystem -->
-    <!-- <include file="$(find kleiber_control)/launch/control.launch" /> -->
-    <include file="$(find kleiber_control)/launch/manual_control.launch" />
+    <include file="$(find kleiber_control)/launch/control.launch" />
+    <!-- <include file="$(find kleiber_control)/launch/manual_control.launch" /> -->
 
     <!-- Planning subsystem -->
     <include file="$(find kleiber_planning)/launch/planning.launch" />
@@ -16,6 +16,8 @@
     <param name="start_lat" value="35.205519008" />
     <param name="start_lon" value="-97.4423217773" />
     <param name="start_x" value="20"/>
-    <param name="start_y" value="25"/>
+    <param name="start_y" value="30"/>
+
+    <node type="rviz" name="rviz" pkg="rviz"/>
 
 </launch>
