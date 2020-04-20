@@ -1,0 +1,8 @@
+<launch>
+    <!-- Choose the launch file to test here -->
+    <include file="$(find kleiber_launch)/launch/kleiber_simple.launch" />
+
+    <!-- Debugging tools -->
+    <node type="rviz" name="rviz" pkg="rviz"/>
+
+</launch>

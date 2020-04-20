@@ -7,7 +7,7 @@ from math import atan2, degrees, radians, fmod
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
-from swc_msgs.msg import Control, RobotState
+from swc_msgs.msg import Control, RobotState, Gps
 
 # Path data
 desired_path = None
@@ -19,8 +19,11 @@ robot_state = None
 ctrl = Control()
 ctrl_pub = rospy.Publisher("/sim/control", Control, queue_size=1)
 
+# Goal data
+goal = Gps()
+
 # Grid size constant
-GRID_SIZE = 0.25
+GRID_SIZE = 0.1
 
 
 def state_estimate_callback(state):
@@ -30,6 +33,10 @@ def state_estimate_callback(state):
 def path_callback(path):
     global desired_path
     desired_path = path
+
+def goal_callback(gps):
+    global goal
+    goal = gps
 
 
 def angle_diff(angle1, angle2):
@@ -43,15 +50,33 @@ def angle_diff(angle1, angle2):
 
 def trash_pursuit(timer):
     # Control gains
-    Kp = 20
+    Kp = 10
 
     # Stop if the path or state is invalid
     if desired_path is None or robot_state is None:
         ctrl.speed = 0
         ctrl.turn_angle = 0
+    # If we are right next to the waypoint, just target it instead of a path
+    elif len(desired_path.poses) == 1:
+        # Slow down
+        ctrl.speed = 2
+
+        # Calculate desired heading difference
+        dLat = goal.latitude - robot_state.latitude
+        dLon = goal.longitude - robot_state.longitude
+        desired_hdg = atan2(dLat, dLon)
+
+        # Get the robot's heading
+        hdg = robot_state.heading
+
+        # Compute turn angle as a function of error
+        error = angle_diff(desired_hdg, hdg)
+        # print(hdg, desired_hdg, error)
+        ctrl.turn_angle = Kp * error
+
     # Try to follow the path
     else:
-        ctrl.speed = 1.5
+        ctrl.speed = 8
 
         lookahead = 2 # meters
 
@@ -74,7 +99,7 @@ def trash_pursuit(timer):
         rdx = robot_state.x - path_pt0.pose.position.x
         rdy = robot_state.y - path_pt0.pose.position.y
         dist = rdx**2 + rdy**2
-        if dist > 25:
+        if dist > 100:
             ctrl.speed = 0
             ctrl.turn_angle = 0
         # Otherwise follow the path normally
@@ -103,6 +128,9 @@ def setup():
     # Subscribe to the path and the current state
     path_sub = rospy.Subscriber("/path", Path, path_callback, queue_size=1)
     pose_sub = rospy.Subscriber("/robot/state", RobotState, state_estimate_callback, queue_size=1)
+
+    # Subscribe to the goal for close range alignment
+    goal_sub = rospy.Subscriber("/task/goal", Gps, goal_callback, queue_size=1)
 
     # Try to follow the first part of the path at all times
     pursuit_timer = rospy.Timer(rospy.Duration(0.02), trash_pursuit, oneshot=False)

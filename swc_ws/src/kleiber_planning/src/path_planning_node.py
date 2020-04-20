@@ -23,9 +23,11 @@ planner = mt_dstar_lite()
 
 # Localization tracking
 robot_pose = None    # Latest PoseStamped update
-GRID_SIZE = 0.25     # Map block size in meters
-MAP_WIDTH = int(60 / GRID_SIZE)   # 50 meters wide
-MAP_HEIGHT = int(125 / GRID_SIZE) # 100 meters long
+GRID_SIZE = 0.1     # Map block size in meters
+LIDAR_RANGE = 10
+MAP_WIDTH = 2*int(LIDAR_RANGE / GRID_SIZE)
+MAP_HEIGHT = 2*int(LIDAR_RANGE / GRID_SIZE)
+map_center = int(MAP_HEIGHT / 2)
 
 # Cost map
 cost_map = None
@@ -56,10 +58,9 @@ def robot_pose_callback(data):
     if active_wpt is not None:
         local_goal = None
         i = 0
-        while cost(local_goal) > 0:
-            # Increase lookahead distance if needed
-            i += 1
-            dist = ((5 * i) + 5) / GRID_SIZE    # Lookahead distance
+        dist = 3 / GRID_SIZE
+        while cost(local_goal) > 0 and dist <= (10 / GRID_SIZE):
+            dist = (3+i*0.5) / GRID_SIZE    # Lookahead distance
 
             # Find robot position in cells
             robot_x = int(robot_pose.pose.position.x / GRID_SIZE)
@@ -69,17 +70,19 @@ def robot_pose_callback(data):
             dx = active_wpt[0] - robot_x
             dy = active_wpt[1] - robot_y
 
-            # If the distance is greater than the distance to goal, set local goal to the active waypoint
-            if dist**2 > (dx**2 + dy**2):
-                local_goal = active_wpt
-                break
+            # If the distance is greater than the distance to goal, set dist to the appropriate distance
+            # if dist**2 > (dx**2 + dy**2):
+            #     dist = math.sqrt(dx**2 + dy**2)
 
             hdg = math.atan2(dy, dx)
 
-            x_goal = int(robot_x + dist * math.cos(hdg))
-            y_goal = int(robot_y + dist * math.sin(hdg))
+            x_goal = int(round(map_center - dist * math.cos(hdg)))
+            y_goal = int(round(map_center - dist * math.sin(hdg)))
             local_goal = (x_goal, y_goal)
-            # print((robot_x, robot_y), local_goal, hdg)
+            # print((map_center, map_center), local_goal, hdg)
+
+            # Increase lookahead distance if needed
+            i += 1
 
 def c_space_callback(c_space):
     global cost_map
@@ -109,8 +112,10 @@ def waypoint_callback(waypoint):
 
 def path_point_to_global_pose_stamped(robot_pos, pp0, pp1):
     # Convert path grid cell into x,y
-    x = pp0 * GRID_SIZE
-    y = pp1 * GRID_SIZE
+    pp0 = map_center - pp0
+    pp1 = map_center - pp1
+    x = (robot_pos[0] + pp0) * GRID_SIZE
+    y = (robot_pos[1] + pp1) * GRID_SIZE
 
     # Make a PoseStamped for the path point
     pose_stamped = PoseStamped()
@@ -130,41 +135,66 @@ def path_plan(c_space):
     if cost_map is None or robot_pose is None or active_wpt is None or local_goal is None:
         return
 
+    # Robot pose in local frame is fixed
+    robot_pos = (map_center, map_center)
+
+    # Global robot pose -> global grid cells for a global map
+    global_robot_pos = (int(robot_pose.pose.position.x / GRID_SIZE), int(robot_pose.pose.position.y / GRID_SIZE))
+
     # Get the waypoint coordinates
     wpt_x = active_wpt[0]
     wpt_y = active_wpt[1]
+
+    # Find distance from robot to goal in cells
+    dx = wpt_x - global_robot_pos[0]
+    dy = wpt_y - global_robot_pos[1]
+
+    # If we are really close to the waypoint, there are no obstacles so publish only the waypoint position
+    # Short-circuit the path planner in this case
+    # if (dx**2 + dy**2) <= (3**2 / GRID_SIZE):
+    #     print("SHORTCUT: Path Planner not needed")
+    #     path_point = (map_center - dx, map_center - dy)
+    #     global_path = Path()
+
+    #     header = Header()
+    #     header.stamp = rospy.Time.now()
+    #     header.frame_id = "base_link"
+
+    #     global_path.header = header
+    #     global_path.poses = [path_point_to_global_pose_stamped(global_robot_pos, path_point[0], path_point[1])]
+
+    #     path_pub.publish(global_path)
+    #     map_init = False
+    #     return
 
     # convert cost_map to list
     active_cost_map = list(cost_map)
 
     # The cost to the goal is always 0
     # Inflate the non obstacles around the active waypoint
-    inflation = int(2 / GRID_SIZE)
-    for i in range(wpt_x - inflation, wpt_x + inflation):
-        for j in range(wpt_y - inflation, wpt_y + inflation):
-            active_cost_map[i * MAP_WIDTH + j] = 0
+    # inflation = int(2 / GRID_SIZE)
+    # for i in range(wpt_x - inflation, wpt_x + inflation):
+    #     for j in range(wpt_y - inflation, wpt_y + inflation):
+    #         active_cost_map[i * MAP_WIDTH + j] = 0
+
+    # Robot position should always have no obstacles on it
+    active_cost_map[robot_pos[0] * MAP_WIDTH + robot_pos[1]] = 0
 
     # Reset the path
     path = None
 
-    # Convert the robot's (x,y) pose into grid cells
-    robot_pos = (int(robot_pose.pose.position.x / GRID_SIZE), int(robot_pose.pose.position.y / GRID_SIZE))
-    print(active_wpt)
-
     # MOVING TARGET D*LITE
     # if map_init is False:
     if True:
-        planner.initialize(240, 500, robot_pos, local_goal, active_cost_map)
+        planner.initialize(MAP_WIDTH, MAP_HEIGHT, robot_pos, local_goal, active_cost_map)
         path = planner.plan()
         map_init = True
     else:
         path = planner.replan(robot_pos, local_goal, active_cost_map)
 
-    print("path planning complete")
-
     # Publish the path if it exists
     if path is not None:
-        print("Path Found")
+        print("SUCCESS: Path Found")
         global_path = Path()
 
         header = Header()
@@ -172,11 +202,12 @@ def path_plan(c_space):
         header.frame_id = "base_link"
 
         global_path.header = header
-        global_path.poses = [path_point_to_global_pose_stamped(robot_pos, path_point[0], path_point[1]) for path_point in path]
+        global_path.poses = [path_point_to_global_pose_stamped(global_robot_pos, path_point[0], path_point[1]) for path_point in path]
         global_path.poses.reverse() # reverse backwards path
 
         path_pub.publish(global_path)
     else:
+        print("FAIL: Path Not Found")
         map_init = False
 
 
@@ -192,7 +223,7 @@ def mt_dstar_node():
     start_y = rospy.get_param("start_y")
 
     # Subscribe to necessary topics
-    map_sub = rospy.Subscriber("/map", OccupancyGrid, c_space_callback, queue_size=1)  # Mapping
+    map_sub = rospy.Subscriber("/local_map", OccupancyGrid, c_space_callback, queue_size=1)  # Mapping
     pose_sub = rospy.Subscriber("/robot/pose", PoseStamped, robot_pose_callback, queue_size=1)
     wpt_sub = rospy.Subscriber("/task/goal", Gps, waypoint_callback, queue_size=1)
 

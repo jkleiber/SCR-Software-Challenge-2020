@@ -7,6 +7,7 @@
 #include <swc_msgs/RobotState.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/Float32.h>
 
 
 // State variables
@@ -57,15 +58,26 @@ void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg)
 
 
 /**
- * @brief Intercept controls sent to the robot to get velocity and turn angle estimates
+ * @brief Intercept controls sent to the robot to get turn angle estimates
  *
  * @param ctrl_msg
  */
 void controlCallback(const swc_msgs::Control::ConstPtr& ctrl_msg)
 {
-    velocity = ctrl_msg->speed;
     turn_angle = ctrl_msg->turn_angle;
 }
+
+
+/**
+ * @brief Velocity sensor callback
+ *
+ * @param vel_msg
+ */
+void velocityCallback(const std_msgs::Float32::ConstPtr& vel_msg)
+{
+    velocity = vel_msg->data;
+}
+
 
 
 void statePublisher(const ros::TimerEvent& timer)
@@ -137,6 +149,7 @@ int main(int argc, char **argv)
     // Subscribe to all sensor readings
     ros::Subscriber gps_sub = loc_node.subscribe(loc_node.resolveName("/sim/gps"), 1, &gpsCallback);
     ros::Subscriber imu_sub = loc_node.subscribe(loc_node.resolveName("/sim/imu"), 1, &imuCallback);
+    ros::Subscriber vel_sub = loc_node.subscribe(loc_node.resolveName("/sim/velocity"), 1, &velocityCallback);
 
     // Subscribe to the control publications
     ros::Subscriber ctrl_sub = loc_node.subscribe(loc_node.resolveName("/sim/control"), 1, &controlCallback);
