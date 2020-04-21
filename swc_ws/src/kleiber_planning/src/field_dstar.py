@@ -93,7 +93,7 @@ class mt_dstar_lite:
         """ Finds the best path from the start state to the goal state """
         loop_count = 0
         while ((self.open_list.top_key() < self.calculate_key(self.goal_node))
-            or (self.goal_node.rhs > self.goal_node.G)) and loop_count < 10000: # TODO: make 10k a settable value based on max expansions
+            or (self.goal_node.rhs > self.goal_node.G)) and loop_count < 1000: # TODO: make 1k a settable value based on max expansions
             # increment loop counter protection
             loop_count += 1
 
@@ -194,7 +194,7 @@ class mt_dstar_lite:
         depth_tracker = 0
 
         # Go until the goal is found
-        while node != self.start_node and depth_tracker < 1000: #TODO: make 1000 settable based on max path length
+        while node != self.start_node and depth_tracker < 100: #TODO: make 100 settable based on max path length
             # Add the next node to the path
             next_node = node.par
             path.append((next_node.row, next_node.col))

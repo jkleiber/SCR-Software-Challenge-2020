@@ -8,6 +8,7 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 
 
 // State variables
@@ -20,6 +21,9 @@ double velocity;
 double turn_angle;
 double angular_accel;
 double linear_accel;
+
+// Bump detector
+bool bumped;
 
 // Publishers
 ros::Publisher state_pub;
@@ -75,9 +79,27 @@ void controlCallback(const swc_msgs::Control::ConstPtr& ctrl_msg)
  */
 void velocityCallback(const std_msgs::Float32::ConstPtr& vel_msg)
 {
-    velocity = vel_msg->data;
+    if(!bumped)
+    {
+        velocity = vel_msg->data;
+    }
+    else
+    {
+        velocity = 0.0;
+    }
+
 }
 
+
+void bumpCallback(const std_msgs::Bool::ConstPtr& bump)
+{
+    bumped = bump->data;
+
+    if(bumped)
+    {
+        velocity = 0.0;
+    }
+}
 
 
 void statePublisher(const ros::TimerEvent& timer)
@@ -146,10 +168,14 @@ int main(int argc, char **argv)
     linear_accel = loc_node.param("localization_node/linear_accel", 0);
     angular_accel = loc_node.param("localization_node/angular_accel", 0);
 
+    // Bump sensor should default to false
+    bumped = false;
+
     // Subscribe to all sensor readings
     ros::Subscriber gps_sub = loc_node.subscribe(loc_node.resolveName("/sim/gps"), 1, &gpsCallback);
     ros::Subscriber imu_sub = loc_node.subscribe(loc_node.resolveName("/sim/imu"), 1, &imuCallback);
     ros::Subscriber vel_sub = loc_node.subscribe(loc_node.resolveName("/sim/velocity"), 1, &velocityCallback);
+    ros::Subscriber bump_sub = loc_node.subscribe(loc_node.resolveName("/sim/bumper"), 1, &bumpCallback);
 
     // Subscribe to the control publications
     ros::Subscriber ctrl_sub = loc_node.subscribe(loc_node.resolveName("/sim/control"), 1, &controlCallback);

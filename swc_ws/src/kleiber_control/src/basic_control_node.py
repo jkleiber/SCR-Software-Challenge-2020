@@ -8,6 +8,7 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
 from swc_msgs.msg import Control, RobotState, Gps
+from gps_calc import measure_gps
 
 # Path data
 desired_path = None
@@ -17,18 +18,23 @@ robot_state = None
 
 # Control data
 ctrl = Control()
-ctrl_pub = rospy.Publisher("/sim/control", Control, queue_size=1)
+ctrl_pub = rospy.Publisher("/kleiber/control", Control, queue_size=1)
 
 # Goal data
 goal = Gps()
+dist_to_goal = 100
 
 # Grid size constant
 GRID_SIZE = 0.1
 
 
 def state_estimate_callback(state):
-    global robot_state
+    global robot_state, dist_to_goal
     robot_state = state
+
+    # Get the distance to goal
+    if goal is not None:
+        dist_to_goal = measure_gps(robot_state.latitude, robot_state.longitude, goal.latitude, goal.longitude)
 
 def path_callback(path):
     global desired_path
@@ -57,28 +63,28 @@ def trash_pursuit(timer):
         ctrl.speed = 0
         ctrl.turn_angle = 0
     # If we are right next to the waypoint, just target it instead of a path
-    elif len(desired_path.poses) == 1:
-        # Slow down
-        ctrl.speed = 2
+    # elif dist_to_goal < 5:#len(desired_path.poses) == 1:
+    #     # TODO: can this speed up a bit?
+    #     ctrl.speed = 2
 
-        # Calculate desired heading difference
-        dLat = goal.latitude - robot_state.latitude
-        dLon = goal.longitude - robot_state.longitude
-        desired_hdg = atan2(dLat, dLon)
+    #     # Calculate desired heading difference
+    #     dLat = goal.latitude - robot_state.latitude
+    #     dLon = goal.longitude - robot_state.longitude
+    #     desired_hdg = atan2(dLat, dLon)
 
-        # Get the robot's heading
-        hdg = robot_state.heading
+    #     # Get the robot's heading
+    #     hdg = robot_state.heading
 
-        # Compute turn angle as a function of error
-        error = angle_diff(desired_hdg, hdg)
-        # print(hdg, desired_hdg, error)
-        ctrl.turn_angle = Kp * error
+    #     # Compute turn angle as a function of error
+    #     error = angle_diff(desired_hdg, hdg)
+    #     # print(hdg, desired_hdg, error)
+    #     ctrl.turn_angle = Kp * error
 
     # Try to follow the path
     else:
-        ctrl.speed = 2
+        ctrl.speed = 1
 
-        lookahead = 2 # meters
+        lookahead = 1 # meters
 
         # Get the target waypoint
         num_poses = len(desired_path.poses)
@@ -114,7 +120,12 @@ def trash_pursuit(timer):
 
             # Compute turn angle as a function of error
             error = angle_diff(desired_hdg, hdg)
-            # print(hdg, desired_hdg, error)
+
+            # If error is greater than 10 degrees, drive slower until it isn't so bad
+            if abs(error) > radians(10):
+                ctrl.speed = 1
+
+            # print(dx, dy, degrees(hdg), degrees(desired_hdg), degrees(error))
             ctrl.turn_angle = Kp * error
 
     # Publish the control needed

@@ -7,6 +7,9 @@
         <param name="y" value="30"/>
     </node>
 
+    <!-- Basic controller -->
     <node pkg="kleiber_control" type="basic_control_node.py" name="basic_control_node" output="screen"/>
 
+    <!-- Reflexive obstacle avoidance helper -->
+    <node pkg="kleiber_control" type="obstacle_node.py" name="obstacle_node" output="screen"/>
 </launch>

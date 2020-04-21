@@ -43,7 +43,7 @@ local_map_pub = rospy.Publisher("/local_map", OccupancyGrid, queue_size=1)
 
 # Robot information
 ROBOT_WIDTH = 0.4
-ROBOT_LENGTH = 0.4
+ROBOT_LENGTH = 0.8
 
 # Track the robot's pose
 robot_x = 0
@@ -221,8 +221,8 @@ def get_configuration_space(timer_event):
 
 def get_local_configuration_space(timer_event):
     """ Go through the map and inflate obstacles so the robot doesn't hit them """
-    WIDTH_INFLATE_FACTOR = int(ROBOT_WIDTH / MAP_RES)
-    HEIGHT_INFLATE_FACTOR = int(ROBOT_LENGTH / MAP_RES)
+    WIDTH_INFLATE_FACTOR = int(ROBOT_WIDTH*2 / MAP_RES)
+    HEIGHT_INFLATE_FACTOR = int(ROBOT_LENGTH*2 / MAP_RES)
 
     # Get a deep copy of the map for the configuration space map
     local_config_space = copy.deepcopy(local_map_data)
@@ -243,7 +243,17 @@ def get_local_configuration_space(timer_event):
                         # Only update the index if it's in range
                         if index >= 0 and index < (local_map_size * local_map_size):
                             # Update the working configuration space
-                            working_local_config_space[index] = cost
+                            # Get distance from obstacle
+                            dist = (i-row)**2 + (j-col)**2
+                            # If this is an "inner circle," set to max cost
+                            if dist < (max(WIDTH_INFLATE_FACTOR, HEIGHT_INFLATE_FACTOR) / 2)**2:
+                                working_local_config_space[index] = cost
+                            else:
+                                working_local_config_space[index] = int(cost / 2)
+
+
+    # DEBUG: check to see where the origin is in RViz
+    # working_local_config_space[0] = 100
 
     # Update header
     local_config_space.header.stamp = rospy.Time.now()

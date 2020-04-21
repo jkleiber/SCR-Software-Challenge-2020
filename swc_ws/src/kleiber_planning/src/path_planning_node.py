@@ -58,9 +58,9 @@ def robot_pose_callback(data):
     if active_wpt is not None:
         local_goal = None
         i = 0
-        dist = 3 / GRID_SIZE
+        dist = 4 / GRID_SIZE
         while cost(local_goal) > 0 and dist <= (10 / GRID_SIZE):
-            dist = (3+i*0.5) / GRID_SIZE    # Lookahead distance
+            dist = (4+i) / GRID_SIZE    # Lookahead distance
 
             # Find robot position in cells
             robot_x = int(robot_pose.pose.position.x / GRID_SIZE)
@@ -71,8 +71,9 @@ def robot_pose_callback(data):
             dy = active_wpt[1] - robot_y
 
             # If the distance is greater than the distance to goal, set dist to the appropriate distance
-            # if dist**2 > (dx**2 + dy**2):
-            #     dist = math.sqrt(dx**2 + dy**2)
+            if dist**2 > (dx**2 + dy**2):
+                local_goal = (map_center - dx, map_center - dy)
+                return
 
             hdg = math.atan2(dy, dx)
 
@@ -136,7 +137,9 @@ def path_plan(c_space):
         return
 
     # Robot pose in local frame is fixed
-    robot_pos = (map_center, map_center)
+    # Project start point a bit ahead of robot to account for planning time
+    offset_dist = 0 # int(1 / GRID_SIZE)
+    robot_pos = (map_center - offset_dist, map_center)
 
     # Global robot pose -> global grid cells for a global map
     global_robot_pos = (int(robot_pose.pose.position.x / GRID_SIZE), int(robot_pose.pose.position.y / GRID_SIZE))
@@ -230,7 +233,7 @@ def mt_dstar_node():
     wpt_sub = rospy.Subscriber("/task/goal", Gps, waypoint_callback, queue_size=1)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=0.1), path_plan, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.375), path_plan, oneshot=False)
 
     # Wait for topic updates
     rospy.spin()
