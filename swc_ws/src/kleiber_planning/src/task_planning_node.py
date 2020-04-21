@@ -12,7 +12,8 @@ active_wpt = None
 active_wpt_idx = 0
 
 # Distance from GPS fix to proceed to next target
-DIST_EPS = 1.0  # meter
+# HACK: aiming for 1 meter accuracy
+DIST_EPS = 2.5  # meter
 
 # Waypoint publisher
 wpt_pub = rospy.Publisher("/task/goal", Gps, queue_size=1)

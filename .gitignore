@@ -11,3 +11,6 @@ build/
 
 # Ignore the simulator
 simulator/
+
+# Ignore pyc files
+*.pyc
