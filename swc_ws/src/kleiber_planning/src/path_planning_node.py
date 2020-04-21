@@ -70,11 +70,7 @@ def robot_pose_callback(data):
             dx = active_wpt[0] - robot_x
             dy = active_wpt[1] - robot_y
 
-<<<<<<< HEAD
-            # If the distance is greater than the distance to goal, set dist to the appropriate distance
-=======
             # If the distance is greater than the distance to goal, set the waypoint to a fixed target
->>>>>>> master
             if dist**2 > (dx**2 + dy**2):
                 local_goal = (map_center - dx, map_center - dy)
                 return
