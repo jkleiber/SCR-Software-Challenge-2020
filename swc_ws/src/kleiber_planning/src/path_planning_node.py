@@ -70,9 +70,10 @@ def robot_pose_callback(data):
             dx = active_wpt[0] - robot_x
             dy = active_wpt[1] - robot_y
 
-            # If the distance is greater than the distance to goal, set dist to the appropriate distance
-            # if dist**2 > (dx**2 + dy**2):
-            #     dist = math.sqrt(dx**2 + dy**2)
+            # If the distance is greater than the distance to goal, set the waypoint to a fixed target
+            if dist**2 > (dx**2 + dy**2):
+                local_goal = (map_center - dx, map_center - dy)
+                return
 
             hdg = math.atan2(dy, dx)
 
@@ -103,8 +104,8 @@ def waypoint_callback(waypoint):
     y = start_y + (dLon * 91058.93)
 
     # Bin the x and y coordinate into a grid cell
-    x_bin = int(x / GRID_SIZE)
-    y_bin = int(y / GRID_SIZE)
+    x_bin = int(round(x / GRID_SIZE))
+    y_bin = int(round(y / GRID_SIZE))
 
     # Set active waypoint
     active_wpt = (x_bin, y_bin)

@@ -50,7 +50,7 @@ def angle_diff(angle1, angle2):
 
 def trash_pursuit(timer):
     # Control gains
-    Kp = 10
+    Kp = 7
 
     # Stop if the path or state is invalid
     if desired_path is None or robot_state is None:
