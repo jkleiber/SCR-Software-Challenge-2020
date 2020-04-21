@@ -91,7 +91,12 @@ class mt_dstar_lite:
 
     def compute_cost_minimal_path(self):
         """ Finds the best path from the start state to the goal state """
-        while (self.open_list.top_key() < self.calculate_key(self.goal_node)) or (self.goal_node.rhs > self.goal_node.G):
+        loop_count = 0
+        while ((self.open_list.top_key() < self.calculate_key(self.goal_node))
+            or (self.goal_node.rhs > self.goal_node.G)) and loop_count < 10000: # TODO: make 10k a settable value based on max expansions
+            # increment loop counter protection
+            loop_count += 1
+
             # Get the highest priority node from the open list
             u_node = self.open_list.top()
 
@@ -185,12 +190,17 @@ class mt_dstar_lite:
         node = self.goal_node
         path = [(node.row, node.col)]
 
+        # Protect against cycles
+        depth_tracker = 0
+
         # Go until the goal is found
-        while node != self.start_node:
+        while node != self.start_node and depth_tracker < 1000: #TODO: make 1000 settable based on max path length
             # Add the next node to the path
             next_node = node.par
             path.append((next_node.row, next_node.col))
             node = next_node
+
+            depth_tracker += 1
 
         # The best path should be found by traversing the pointers
         return path

@@ -3,10 +3,11 @@
 import rospy
 import copy
 
-from math import sin, cos, pi
+from math import sin, cos, pi, fmod
 
 import tf
 
+from geometry_msgs.msg import Pose, Point, Quaternion
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from sensor_msgs.msg import LaserScan
 from swc_msgs.msg import RobotState
@@ -20,7 +21,11 @@ MAP_HEIGHT = int(125 / MAP_RES) # 120 meters long
 LIDAR_RANGE = 10
 
 # Create the map
-map_info = MapMetaData(resolution=MAP_RES, width = MAP_WIDTH, height = MAP_HEIGHT)
+map_orientation = tf.transformations.quaternion_from_euler(0, 0, -pi/2)
+map_origin = Pose()
+map_origin.position = Point(x=0, y=MAP_WIDTH*MAP_RES, z=0)
+map_origin.orientation = Quaternion(x=map_orientation[0], y=map_orientation[1], z=map_orientation[2], w=map_orientation[3])
+map_info = MapMetaData(resolution=MAP_RES, width = MAP_WIDTH, height = MAP_HEIGHT, origin=map_origin)
 map_data = OccupancyGrid(info = map_info, data = [0] * (MAP_HEIGHT * MAP_WIDTH))
 working_map_data = [0] * (MAP_HEIGHT * MAP_WIDTH)
 
@@ -50,12 +55,46 @@ robot_hdg = 0
 
 def state_estimate_callback(state):
     """ Get the pose from the state variables """
-    global robot_x, robot_y, robot_hdg
+    global robot_x, robot_y, robot_hdg, local_map_data
 
     # set the pose
     robot_x = state.x
     robot_y = state.y
     robot_hdg = state.heading
+
+    ### update the local map's origin: position and orientation
+    # Position
+    local_map_data.info.origin.position = Point(x=0, y=0, z=0)
+
+    # Orientation
+    # always offset by pi/2
+    # q = tf.transformations.quaternion_from_euler(0, 0, pi/2)
+    # local_map_data.info.origin.orientation = Quaternion(x=q[0],y=q[1],z=q[2],w=q[3])
+    # NOTE: The map is always off by pi/2, but this is solved in the below transformation
+    local_map_data.info.origin.orientation = Quaternion()
+
+    # Find heading with the pi/2 map rotation offset included
+    hdg = fmod(robot_hdg + pi/2, 2*pi)
+
+    ### In order to make the local map display nicely in RViz, need to apply a rotation as the robot rotates
+    ### Link: https://stackoverflow.com/questions/20936429/rotating-a-rectangle-shaped-polygon-around-its-center-java
+    # Find anchor point (the origin position of the map) for local map during 0 degree heading
+    anchor_x = robot_x - LIDAR_RANGE
+    anchor_y = robot_y - LIDAR_RANGE
+
+    # Translate 0 degree rectangle to origin (robot position is the center)
+    origin_x = anchor_x - robot_x
+    origin_y = anchor_y - robot_y
+
+    # Apply rotation matrix
+    rot_x = origin_x * cos(hdg) - origin_y * sin(hdg)
+    rot_y = origin_x * sin(hdg) + origin_y * cos(hdg)
+
+    # Translate rotated rectangle back to robot center
+    local_map_x = robot_x + rot_x
+    local_map_y = robot_y + rot_y
+
+
 
     # Broadcast the new transform between the robot and the map
     broadcaster = tf.TransformBroadcaster()
@@ -69,16 +108,16 @@ def state_estimate_callback(state):
     #                           rospy.Time.now(),
     #                           "base_link",
     #                           "map")
-    broadcaster.sendTransform((robot_x, robot_y, 0),
-                              tf.transformations.quaternion_from_euler(0, 0, robot_hdg),
-                              rospy.Time.now(),
-                              "local_map",
-                              "map")
-    broadcaster.sendTransform((0, 0, 0),
+    broadcaster.sendTransform((0,0,0),
                               tf.transformations.quaternion_from_euler(0, 0, 0),
                               rospy.Time.now(),
                               "base_link",
-                              "local_map")
+                              "map")
+    broadcaster.sendTransform((local_map_x, local_map_y, 0),
+                              tf.transformations.quaternion_from_euler(0, 0, hdg),
+                              rospy.Time.now(),
+                              "local_map",
+                              "map")
 
 
 def laser_scan_callback(scan_data):

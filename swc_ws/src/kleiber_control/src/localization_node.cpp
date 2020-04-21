@@ -110,7 +110,7 @@ void posePublisher(const ros::TimerEvent& timer)
 
     // Stamp
     robot_pose.header.stamp = ros::Time::now();
-    robot_pose.header.frame_id = "base_link";
+    robot_pose.header.frame_id = "map";
 
     // Set position
     robot_pose.pose.position.x = x;

@@ -172,10 +172,12 @@ def path_plan(c_space):
 
     # The cost to the goal is always 0
     # Inflate the non obstacles around the active waypoint
-    # inflation = int(2 / GRID_SIZE)
-    # for i in range(wpt_x - inflation, wpt_x + inflation):
-    #     for j in range(wpt_y - inflation, wpt_y + inflation):
-    #         active_cost_map[i * MAP_WIDTH + j] = 0
+    inflation = int(2 / GRID_SIZE)
+    for i in range(wpt_x - inflation, wpt_x + inflation):
+        for j in range(wpt_y - inflation, wpt_y + inflation):
+            idx = i * MAP_WIDTH + j
+            if idx >= 0 and idx <= (MAP_WIDTH * MAP_HEIGHT):
+                active_cost_map[idx] = 0
 
     # Robot position should always have no obstacles on it
     active_cost_map[robot_pos[0] * MAP_WIDTH + robot_pos[1]] = 0
@@ -228,7 +230,7 @@ def mt_dstar_node():
     wpt_sub = rospy.Subscriber("/task/goal", Gps, waypoint_callback, queue_size=1)
 
     # Make a timer to publish new paths
-    timer = rospy.Timer(rospy.Duration(secs=0.25), path_plan, oneshot=False)
+    timer = rospy.Timer(rospy.Duration(secs=0.1), path_plan, oneshot=False)
 
     # Wait for topic updates
     rospy.spin()

@@ -76,7 +76,7 @@ def trash_pursuit(timer):
 
     # Try to follow the path
     else:
-        ctrl.speed = 8
+        ctrl.speed = 2
 
         lookahead = 2 # meters
 
