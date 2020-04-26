@@ -69,7 +69,7 @@ def main_loop():
     active_wpt = wpt_list[active_wpt_idx]
     
     # Wait for task/goal to have a subscriber
-    while wpt_pub.get_num_connections() < 1:
+    while wpt_pub.get_num_connections() < 2:
         time.sleep(0.1)
     
     # Planning ready
