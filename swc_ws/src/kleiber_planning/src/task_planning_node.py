@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import rospy
+import time
 
 from gps_calc import measure_gps
 from swc_msgs.msg import Gps, RobotState
@@ -66,6 +67,13 @@ def main_loop():
     wpt_list = waypoints.waypoints
     active_wpt_idx = 0
     active_wpt = wpt_list[active_wpt_idx]
+    
+    # Wait for task/goal to have a subscriber
+    while wpt_pub.get_num_connections() < 1:
+        time.sleep(0.1)
+    
+    # Planning ready
+    print("Task Planning Ready")
 
     rospy.spin()
 
