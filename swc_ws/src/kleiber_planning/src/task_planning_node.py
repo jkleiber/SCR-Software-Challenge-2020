@@ -56,6 +56,10 @@ def main_loop():
     global wpt_list, active_wpt, active_wpt_idx
     rospy.init_node("task_planning_node")
 
+    # Wait for task/goal to have all subscribers before doing anything
+    while wpt_pub.get_num_connections() < 2:
+        time.sleep(0.1)
+    
     # Subscribe to localization updates
     state_sub = rospy.Subscriber("/robot/state", RobotState, state_estimate_callback)
 
@@ -67,10 +71,6 @@ def main_loop():
     wpt_list = waypoints.waypoints
     active_wpt_idx = 0
     active_wpt = wpt_list[active_wpt_idx]
-    
-    # Wait for task/goal to have a subscriber
-    while wpt_pub.get_num_connections() < 2:
-        time.sleep(0.1)
     
     # Planning ready
     print("Task Planning Ready")
